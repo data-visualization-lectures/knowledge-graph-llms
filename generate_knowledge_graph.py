@@ -17,6 +17,12 @@ load_dotenv()
 # Get API key from environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 
+if not api_key:
+    raise ValueError(
+        "OPENAI_API_KEY is not set. "
+        "Please set it in Streamlit Cloud Secrets or in your .env file."
+    )
+
 llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
 
 # Create a custom prompt for Japanese relationship extraction
