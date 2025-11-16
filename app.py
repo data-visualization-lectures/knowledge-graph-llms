@@ -3,44 +3,6 @@ import streamlit as st
 import streamlit.components.v1 as components  # For embedding custom HTML
 from generate_knowledge_graph import generate_knowledge_graph, export_graph_to_json, export_graph_to_csv
 
-# JavaScript to translate Streamlit components to Japanese
-translate_script = """
-<script>
-function translateStreamlitUI() {
-    // Wait for DOM to be fully loaded
-    setTimeout(() => {
-        // Translate file uploader text
-        const labels = document.querySelectorAll('*');
-        labels.forEach(el => {
-            if (el.textContent.includes('Drag and drop file here')) {
-                el.textContent = el.textContent.replace('Drag and drop file here', 'ファイルをドラッグ&ドロップしてください');
-            }
-            if (el.textContent.includes('Browse files')) {
-                el.textContent = el.textContent.replace('Browse files', 'ファイルを選択');
-            }
-            if (el.textContent.includes('Limit 200MB per file')) {
-                el.textContent = el.textContent.replace('Limit 200MB per file', 'ファイルサイズの制限: 200MB');
-            }
-        });
-    }, 500);
-}
-
-// Run translation when page loads
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', translateStreamlitUI);
-} else {
-    translateStreamlitUI();
-}
-
-// Also run translation after every re-run
-const observer = new MutationObserver(translateStreamlitUI);
-observer.observe(document.body, { childList: true, subtree: true });
-</script>
-"""
-
-# Inject the translation script
-components.html(translate_script)
-
 # Set up Streamlit page configuration
 st.set_page_config(
     page_icon=None, 
