@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # Set the title of the app
-st.title("Knowledge Graph From Text")
+st.title("テキストから知識グラフを生成")
 
 # Initialize session state for graph data
 if "graph_documents" not in st.session_state:
@@ -21,28 +21,28 @@ if "graph_html" not in st.session_state:
     st.session_state.graph_html = None
 
 # Sidebar section for user input method
-st.sidebar.title("Input document")
+st.sidebar.title("ドキュメント入力")
 input_method = st.sidebar.radio(
-    "Choose an input method:",
-    ["Upload txt", "Input text"],  # Options for uploading a file or manually inputting text
+    "入力方法を選択:",
+    ["ファイルをアップロード", "テキストを直接入力"],  # Options for uploading a file or manually inputting text
 )
 
 # Case 1: User chooses to upload a .txt file
-if input_method == "Upload txt":
+if input_method == "ファイルをアップロード":
     # File uploader widget in the sidebar
-    uploaded_file = st.sidebar.file_uploader(label="Upload file", type=["txt"])
+    uploaded_file = st.sidebar.file_uploader(label="ファイルを選択", type=["txt"])
     
     if uploaded_file is not None:
         # Read the uploaded file content and decode it as UTF-8 text
         text = uploaded_file.read().decode("utf-8")
 
         # Button to generate the knowledge graph
-        if st.sidebar.button("Generate Knowledge Graph"):
-            with st.spinner("Generating knowledge graph..."):
+        if st.sidebar.button("知識グラフを生成"):
+            with st.spinner("知識グラフを生成中..."):
                 # Call the function to generate the graph from the text
                 net, graph_documents = generate_knowledge_graph(text)
                 st.session_state.graph_documents = graph_documents
-                st.success("Knowledge graph generated successfully!")
+                st.success("知識グラフを生成しました！")
 
                 # Save the graph to an HTML file
                 output_file = "knowledge_graph.html"
@@ -59,7 +59,7 @@ if input_method == "Upload txt":
         # Display download buttons if graph data exists
         if st.session_state.graph_documents is not None:
             st.sidebar.markdown("---")
-            st.sidebar.subheader("📥 Download Graph Data")
+            st.sidebar.subheader("📥 グラフデータをダウンロード")
 
             col1, col2 = st.sidebar.columns(2)
 
@@ -84,15 +84,15 @@ if input_method == "Upload txt":
 # Case 2: User chooses to directly input text
 else:
     # Text area for manual input
-    text = st.sidebar.text_area("Input text", height=300)
+    text = st.sidebar.text_area("テキストを入力", height=300)
 
     if text:  # Check if the text area is not empty
-        if st.sidebar.button("Generate Knowledge Graph"):
-            with st.spinner("Generating knowledge graph..."):
+        if st.sidebar.button("知識グラフを生成"):
+            with st.spinner("知識グラフを生成中..."):
                 # Call the function to generate the graph from the input text
                 net, graph_documents = generate_knowledge_graph(text)
                 st.session_state.graph_documents = graph_documents
-                st.success("Knowledge graph generated successfully!")
+                st.success("知識グラフを生成しました！")
 
                 # Save the graph to an HTML file
                 output_file = "knowledge_graph.html"
@@ -109,7 +109,7 @@ else:
         # Display download buttons if graph data exists
         if st.session_state.graph_documents is not None:
             st.sidebar.markdown("---")
-            st.sidebar.subheader("📥 Download Graph Data")
+            st.sidebar.subheader("📥 グラフデータをダウンロード")
 
             col1, col2 = st.sidebar.columns(2)
 

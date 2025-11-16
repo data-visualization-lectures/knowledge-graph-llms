@@ -19,8 +19,8 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
     raise ValueError(
-        "OPENAI_API_KEY is not set. "
-        "Please set it in Streamlit Cloud Secrets or in your .env file."
+        "OPENAI_API_KEY が設定されていません。 "
+        "Streamlit Cloud の Secrets またはローカルの .env ファイルで設定してください。"
     )
 
 llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
