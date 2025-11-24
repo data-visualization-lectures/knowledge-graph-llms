@@ -26,6 +26,27 @@ if "api_key_validated" not in st.session_state:
 if "last_validated_key" not in st.session_state:
     st.session_state.last_validated_key = None
 
+# Dynamic sidebar width based on graph generation state
+sidebar_width = "200px" if st.session_state.graph_html is not None else "500px"
+
+# Apply custom CSS for sidebar width
+st.markdown(
+    f"""
+    <style>
+    [data-testid="stSidebar"] {{
+        width: {sidebar_width} !important;
+        min-width: {sidebar_width} !important;
+        max-width: {sidebar_width} !important;
+    }}
+    [data-testid="stSidebarContent"] {{
+        width: {sidebar_width} !important;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # Check if API key is available in environment variables
 from dotenv import load_dotenv
 import os
@@ -87,6 +108,24 @@ else:
 
 st.sidebar.markdown("---")
 
+# Sidebar section for prompt customization
+st.sidebar.title("⚙️ プロンプト設定")
+from generate_knowledge_graph import DEFAULT_PROMPT_TEMPLATE
+
+with st.sidebar.expander("プロンプトをカスタマイズ", expanded=False):
+    st.markdown("**プロンプトテンプレート**")
+    st.caption("知識グラフ抽出に使用するプロンプトをカスタマイズできます。`{input}`はテキストが挿入される場所です。")
+    
+    custom_prompt = st.text_area(
+        "プロンプトテンプレート",
+        value=DEFAULT_PROMPT_TEMPLATE,
+        height=300,
+        help="プロンプトをカスタマイズして、抽出する情報を調整できます。",
+        label_visibility="collapsed"
+    )
+
+st.sidebar.markdown("---")
+
 # Sidebar section for user input method
 st.sidebar.title("ドキュメント入力")
 input_method = st.sidebar.radio(
@@ -108,7 +147,7 @@ if input_method == "ファイルをアップロード":
             with st.spinner("知識グラフを生成中..."):
                 try:
                     # Call the function to generate the graph from the text
-                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key)
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt)
                     st.session_state.graph_documents = graph_documents
                 except Exception as e:
                     st.error(f"エラーが発生しました: {str(e)}")
@@ -122,6 +161,9 @@ if input_method == "ファイルをアップロード":
                 # Read and store HTML in session state
                 with open(output_file, 'r', encoding='utf-8') as HtmlFile:
                     st.session_state.graph_html = HtmlFile.read()
+                
+                # Rerun to apply sidebar width change
+                st.rerun()
 
         # Display the graph if it exists in session state
         if st.session_state.graph_html is not None:
@@ -162,7 +204,7 @@ else:
             with st.spinner("知識グラフを生成中..."):
                 try:
                     # Call the function to generate the graph from the input text
-                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key)
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt)
                     st.session_state.graph_documents = graph_documents
                 except Exception as e:
                     st.error(f"エラーが発生しました: {str(e)}")
@@ -176,6 +218,9 @@ else:
                 # Read and store HTML in session state
                 with open(output_file, 'r', encoding='utf-8') as HtmlFile:
                     st.session_state.graph_html = HtmlFile.read()
+                
+                # Rerun to apply sidebar width change
+                st.rerun()
 
         # Display the graph if it exists in session state
         if st.session_state.graph_html is not None:

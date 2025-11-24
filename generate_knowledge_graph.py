@@ -12,6 +12,23 @@ import csv
 from io import StringIO
 
 
+# Default prompt template for Japanese relationship extraction
+DEFAULT_PROMPT_TEMPLATE = """以下のテキストから知識グラフの情報を抽出してください。
+エンティティ（人物、組織、場所など）と、それらの間の関係性を日本語で抽出します。
+
+関係性は以下の例のように、わかりやすい日本語で出力してください：
+- 所属している
+- 友人である
+- 位置している
+- 質問する
+- 説明する
+- 関連している
+
+テキスト：
+{input}
+
+エンティティと関係性を抽出してください。"""
+
 # Extract graph data from input text
 async def extract_graph_data(text, graph_transformer):
     """
@@ -179,7 +196,7 @@ def export_graph_to_csv(graph_documents):
     return output.getvalue()
 
 
-def generate_knowledge_graph(text, api_key=None):
+def generate_knowledge_graph(text, api_key=None, prompt_template=None):
     """
     Generates and visualizes a knowledge graph from input text.
 
@@ -189,6 +206,7 @@ def generate_knowledge_graph(text, api_key=None):
     Args:
         text (str): Input text to convert into a knowledge graph.
         api_key (str, optional): OpenAI API key. If not provided, reads from environment.
+        prompt_template (str, optional): Custom prompt template. If not provided, uses DEFAULT_PROMPT_TEMPLATE.
 
     Returns:
         tuple: (pyvis.network.Network, list) - The visualized network graph object and graph_documents.
@@ -206,24 +224,12 @@ def generate_knowledge_graph(text, api_key=None):
     # LLMとtransformerの初期化
     llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=api_key)
     
+    # Use custom prompt template or default
+    if prompt_template is None:
+        prompt_template = DEFAULT_PROMPT_TEMPLATE
+    
     # Create a custom prompt for Japanese relationship extraction
-    japanese_prompt = PromptTemplate.from_template(
-        """以下のテキストから知識グラフの情報を抽出してください。
-エンティティ（人物、組織、場所など）と、それらの間の関係性を日本語で抽出します。
-
-関係性は以下の例のように、わかりやすい日本語で出力してください：
-- 所属している
-- 友人である
-- 位置している
-- 質問する
-- 説明する
-- 関連している
-
-テキスト：
-{input}
-
-エンティティと関係性を抽出してください。"""
-    )
+    japanese_prompt = PromptTemplate.from_template(prompt_template)
     
     graph_transformer = LLMGraphTransformer(llm=llm, prompt=japanese_prompt)
     
