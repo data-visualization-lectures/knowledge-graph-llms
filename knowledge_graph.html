@@ -199,9 +199,6 @@ function highlightFilter(filter) {
             
             
             
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-            
 
         
 <center>
@@ -250,48 +247,6 @@ function highlightFilter(filter) {
         <div class="card" style="width: 100%">
             
             
-              <div id="filter-menu" class="card-header">
-                <div class="row no-gutters">
-                  <div class="col-3 pb-2">
-                    <select
-                            class="form-select"
-                            aria-label="Default select example"
-                            onchange="updateFilter(value, 'item')"
-                            id="select-item"
-                        >
-                        <option value="">Select a network item</option>
-                        <option value="edge">edge</option>
-                        <option value="node">node</option>
-                    </select>
-                  </div>
-                  <div class="col-3 pb-2">
-                    <select
-                            class="form-select"
-                            aria-label="Default select example"
-                            onchange="updateFilter(value, 'property')"
-                            id="select-property"
-                        >
-                        <option value="">Select a property...</option>
-                    </select>
-                  </div>
-                  <div class="col-3 pb-2">
-                    <select
-                            class="form-select"
-                            aria-label="Default select example"
-                            id="select-value"
-                        >
-                        <option value="">Select value(s)...</option>
-                    </select>
-                  </div>
-                  <div class="col-1 pb-2">
-                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
-                  </div>
-                  <div class="col-2 pb-2">
-                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
-                  </div>
-                </div>
-              </div>
-            
             <div id="mynetwork" class="card-body"></div>
         </div>
 
@@ -319,132 +274,6 @@ function highlightFilter(filter) {
               
 
               
-                  // explicitly using onItemAdd and this function as we need to save multiple values
-                  let updateValueFilter = function() {
-                      return function () {
-                      filter['value'].push(arguments[0])
-                      }
-                  }
-
-                  let valueControl = new TomSelect("#select-value",{
-                      maxItems: null,
-                      valueField: 'id',
-                      labelField: 'title',
-                      searchField: 'title',
-                      create: false,
-                      sortField: {
-                          field: "text",
-                          direction: "asc"
-                      },
-                      onItemAdd: updateValueFilter()
-                  });
-
-                  let addValues = function() {
-                      return function () {
-                          // clear the current value options and add the selected attribute values
-                          // tom-select handles duplicates
-                          let selectedProperty = arguments[0];
-                          valueControl.clear();
-                          valueControl.clearOptions();
-                          filter['value'] = []
-                          if (filter['item'] === 'node') {
-                              for (let each in allNodes) {
-                                  valueControl.addOption({
-                                      id:allNodes[each][selectedProperty],
-                                      title:allNodes[each][selectedProperty]
-                                  })
-                              }
-                          }
-                          else if (filter['item'] === 'edge') {
-                              for (let each in allEdges) {
-                                  valueControl.addOption({
-                                      id:allEdges[each][selectedProperty],
-                                      title:allEdges[each][selectedProperty]
-                                  })
-                              }
-                          }
-                      }
-                  };
-
-                  let propControl = new TomSelect("#select-property",{
-                      valueField: 'id',
-                      labelField: 'title',
-                      searchField: 'title',
-                      create: false,
-                      sortField: {
-                          field: "text",
-                          direction: "asc"
-                      },
-                      onItemAdd: addValues()
-                  });
-
-                  let addProperties = function() {
-                      return function () {
-                          // loops through the selected network item and adds the attributes to dropdown
-                          // tom-select handles duplicates
-                          clearFilter(false)
-                          if (arguments[0] === 'edge') {
-                              for (let each in allEdges) {
-                                  if (allEdges.hasOwnProperty(each)) {
-                                      for (let eachProp in allEdges[each]) {
-                                          if (allEdges[each].hasOwnProperty(eachProp)) {
-                                              propControl.addOption({id: eachProp, title: eachProp})
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                          else if (arguments[0] === 'node') {
-                              for (let each in allNodes) {
-                                  if (allNodes.hasOwnProperty(each)) {
-                                      for (let eachProp in allNodes[each]) {
-                                          if (allNodes[each].hasOwnProperty(eachProp)
-                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
-                                                  && eachProp !== 'hiddenLabel')) {
-                                              propControl.addOption({id: eachProp, title: eachProp})
-
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                  };
-
-                  let itemControl = new TomSelect("#select-item",{
-                      create: false,
-                      sortField:{
-                          field: "text",
-                          direction: "asc"
-                      },
-                      onItemAdd: addProperties()
-                  });
-
-                  function clearFilter(reset) {
-                      // utility function to clear all the selected filter options
-                      // if reset is set to true, the existing filter will be removed
-                      // else, only the dropdown options are cleared
-                      propControl.clear();
-                      propControl.clearOptions();
-                      valueControl.clear();
-                      valueControl.clearOptions();
-                      filter = {
-                          item : '',
-                          property : '',
-                          value : []
-                      }
-                      if (reset) {
-                          itemControl.clear();
-                          filterHighlight({nodes: []})
-                      }
-                  }
-
-                  function updateFilter(value, key) {
-                      // key could be 'item' or 'property' and value is as selected in dropdown
-                      filter[key] = value
-                  }
-
-              
 
               // This method is responsible for drawing the graph, returns the drawn network
               function drawGraph() {
@@ -453,8 +282,8 @@ function highlightFilter(filter) {
                   
 
                   // parsing and collecting nodes and edges from the python
-                  nodes = new vis.DataSet([{"font": {"color": "white"}, "group": "Fictional organization", "id": "Night\u0027S Watch", "label": "Night\u0027S Watch", "shape": "dot", "title": "Fictional organization"}, {"font": {"color": "white"}, "group": "Person", "id": "David Benioff", "label": "David Benioff", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Award", "id": "Primetime Emmy Awards", "label": "Primetime Emmy Awards", "shape": "dot", "title": "Award"}, {"font": {"color": "white"}, "group": "Award", "id": "Hugo Awards", "label": "Hugo Awards", "shape": "dot", "title": "Award"}, {"font": {"color": "white"}, "group": "Person", "id": "D. B. Weiss", "label": "D. B. Weiss", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Fictional continent", "id": "Essos", "label": "Essos", "shape": "dot", "title": "Fictional continent"}, {"font": {"color": "white"}, "group": "Organization", "id": "Hbo", "label": "Hbo", "shape": "dot", "title": "Organization"}, {"font": {"color": "white"}, "group": "Person", "id": "George R. R. Martin", "label": "George R. R. Martin", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Television series", "id": "A Knight Of The Seven Kingdoms", "label": "A Knight Of The Seven Kingdoms", "shape": "dot", "title": "Television series"}, {"font": {"color": "white"}, "group": "Book series", "id": "A Song Of Ice And Fire", "label": "A Song Of Ice And Fire", "shape": "dot", "title": "Book series"}, {"font": {"color": "white"}, "group": "Award", "id": "Golden Globe Award For Best Television Series \u2013 Drama", "label": "Golden Globe Award For Best Television Series \u2013 Drama", "shape": "dot", "title": "Award"}, {"font": {"color": "white"}, "group": "Book", "id": "A Game Of Thrones", "label": "A Game Of Thrones", "shape": "dot", "title": "Book"}, {"font": {"color": "white"}, "group": "Television series", "id": "Game Of Thrones", "label": "Game Of Thrones", "shape": "dot", "title": "Television series"}, {"font": {"color": "white"}, "group": "Fictional object", "id": "Iron Throne", "label": "Iron Throne", "shape": "dot", "title": "Fictional object"}, {"font": {"color": "white"}, "group": "Fictional place", "id": "Seven Kingdoms", "label": "Seven Kingdoms", "shape": "dot", "title": "Fictional place"}, {"font": {"color": "white"}, "group": "Television series", "id": "House Of The Dragon", "label": "House Of The Dragon", "shape": "dot", "title": "Television series"}, {"font": {"color": "white"}, "group": "Award", "id": "Peabody Award", "label": "Peabody Award", "shape": "dot", "title": "Award"}, {"font": {"color": "white"}, "group": "Fictional continent", "id": "Westeros", "label": "Westeros", "shape": "dot", "title": "Fictional continent"}]);
-                  edges = new vis.DataSet([{"arrows": "to", "from": "Game Of Thrones", "label": "creator", "to": "David Benioff"}, {"arrows": "to", "from": "Game Of Thrones", "label": "creator", "to": "D. B. Weiss"}, {"arrows": "to", "from": "Game Of Thrones", "label": "network", "to": "Hbo"}, {"arrows": "to", "from": "Game Of Thrones", "label": "adaptation", "to": "A Song Of Ice And Fire"}, {"arrows": "to", "from": "A Song Of Ice And Fire", "label": "author", "to": "George R. R. Martin"}, {"arrows": "to", "from": "A Song Of Ice And Fire", "label": "first_book", "to": "A Game Of Thrones"}, {"arrows": "to", "from": "Game Of Thrones", "label": "setting", "to": "Westeros"}, {"arrows": "to", "from": "Game Of Thrones", "label": "setting", "to": "Essos"}, {"arrows": "to", "from": "Game Of Thrones", "label": "focus", "to": "Iron Throne"}, {"arrows": "to", "from": "Game Of Thrones", "label": "focus", "to": "Seven Kingdoms"}, {"arrows": "to", "from": "Game Of Thrones", "label": "focus", "to": "Night\u0027S Watch"}, {"arrows": "to", "from": "Game Of Thrones", "label": "award", "to": "Primetime Emmy Awards"}, {"arrows": "to", "from": "Game Of Thrones", "label": "award", "to": "Hugo Awards"}, {"arrows": "to", "from": "Game Of Thrones", "label": "award", "to": "Peabody Award"}, {"arrows": "to", "from": "Game Of Thrones", "label": "nomination", "to": "Golden Globe Award For Best Television Series \u2013 Drama"}, {"arrows": "to", "from": "House Of The Dragon", "label": "network", "to": "Hbo"}, {"arrows": "to", "from": "A Knight Of The Seven Kingdoms", "label": "network", "to": "Hbo"}]);
+                  nodes = new vis.DataSet([{"font": {"color": "white"}, "group": "Object", "id": "\u5730\u7403", "label": "\u5730\u7403", "shape": "dot", "title": "Object"}, {"font": {"color": "white"}, "group": "Person", "id": "\u535a\u58eb", "label": "\u535a\u58eb", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Person", "id": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9\u306e\u304a\u7236\u3055\u3093", "label": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9\u306e\u304a\u7236\u3055\u3093", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Place", "id": "\u66f8\u658e", "label": "\u66f8\u658e", "shape": "dot", "title": "Place"}, {"font": {"color": "white"}, "group": "Person", "id": "\u30b8\u30e7\u30d0\u30f3\u30cb", "label": "\u30b8\u30e7\u30d0\u30f3\u30cb", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Object", "id": "\u661f", "label": "\u661f", "shape": "dot", "title": "Object"}, {"font": {"color": "white"}, "group": "Person", "id": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Object", "id": "\u96d1\u8a8c", "label": "\u96d1\u8a8c", "shape": "dot", "title": "Object"}, {"font": {"color": "white"}, "group": "Object", "id": "\u592a\u967d", "label": "\u592a\u967d", "shape": "dot", "title": "Object"}, {"font": {"color": "white"}, "group": "Place", "id": "\u6559\u5ba4", "label": "\u6559\u5ba4", "shape": "dot", "title": "Place"}, {"font": {"color": "white"}, "group": "Object", "id": "\u672c", "label": "\u672c", "shape": "dot", "title": "Object"}, {"font": {"color": "white"}, "group": "Person", "id": "\u5148\u751f", "label": "\u5148\u751f", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Person", "id": "\u30b6\u30cd\u30ea", "label": "\u30b6\u30cd\u30ea", "shape": "dot", "title": "Person"}, {"font": {"color": "white"}, "group": "Object", "id": "\u5929\u306e\u5ddd", "label": "\u5929\u306e\u5ddd", "shape": "dot", "title": "Object"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "\u5148\u751f", "label": "\u4f4d\u7f6e\u3057\u3066\u3044\u308b", "to": "\u6559\u5ba4"}, {"arrows": "to", "from": "\u30b8\u30e7\u30d0\u30f3\u30cb", "label": "\u4f4d\u7f6e\u3057\u3066\u3044\u308b", "to": "\u6559\u5ba4"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u4f4d\u7f6e\u3057\u3066\u3044\u308b", "to": "\u6559\u5ba4"}, {"arrows": "to", "from": "\u30b6\u30cd\u30ea", "label": "\u4f4d\u7f6e\u3057\u3066\u3044\u308b", "to": "\u6559\u5ba4"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9\u306e\u304a\u7236\u3055\u3093"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9\u306e\u304a\u7236\u3055\u3093", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u535a\u58eb"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u66f8\u658e"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u672c"}, {"arrows": "to", "from": "\u30ab\u30e0\u30d1\u30cd\u30eb\u30e9", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u96d1\u8a8c"}, {"arrows": "to", "from": "\u30b8\u30e7\u30d0\u30f3\u30cb", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u96d1\u8a8c"}, {"arrows": "to", "from": "\u5929\u306e\u5ddd", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u661f"}, {"arrows": "to", "from": "\u5929\u306e\u5ddd", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u592a\u967d"}, {"arrows": "to", "from": "\u5929\u306e\u5ddd", "label": "\u95a2\u9023\u3057\u3066\u3044\u308b", "to": "\u5730\u7403"}]);
 
                   nodeColors = {};
                   allNodes = nodes.get({ returnType: "Object" });
