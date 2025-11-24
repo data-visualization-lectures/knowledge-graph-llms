@@ -2,7 +2,6 @@ from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from pyvis.network import Network
 from langchain_core.callbacks import BaseCallbackHandler
 
 from dotenv import load_dotenv
@@ -91,79 +90,228 @@ async def extract_graph_data(text, graph_transformer, debug=False):
     return graph_documents
 
 
+def generate_cytoscape_elements(graph_documents):
+    """
+    Converts graph documents to Cytoscape.js elements JSON format.
+
+    Args:
+        graph_documents (list): A list of GraphDocument objects.
+
+    Returns:
+        list: A list of dictionaries representing nodes and edges for Cytoscape.js.
+    """
+    if not graph_documents:
+        return []
+
+    nodes = graph_documents[0].nodes
+    relationships = graph_documents[0].relationships
+    
+    elements = []
+    node_ids = set()
+
+    import random
+
+    # Add nodes
+    for node in nodes:
+        elements.append({
+            "data": {
+                "id": node.id,
+                "label": node.id,
+                "type": node.type
+            },
+            "position": {
+                "x": random.uniform(100, 800),
+                "y": random.uniform(100, 600)
+            }
+        })
+        node_ids.add(node.id)
+
+    # Add edges
+    for rel in relationships:
+        # Ensure both source and target nodes exist to avoid errors
+        if rel.source.id in node_ids and rel.target.id in node_ids:
+            elements.append({
+                "data": {
+                    "source": rel.source.id,
+                    "target": rel.target.id,
+                    "label": rel.type
+                }
+            })
+            
+    return elements
+
+
+def generate_cytoscape_html(elements):
+    """
+    Generates a complete HTML string with embedded Cytoscape.js graph.
+
+    Args:
+        elements (list): Cytoscape.js elements JSON.
+
+    Returns:
+        str: HTML string.
+    """
+    elements_json = json.dumps(elements, ensure_ascii=False)
+    
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Knowledge Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+    <style>
+        body {{
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #222222;
+            color: #ffffff;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }}
+        #cy {{
+            width: 100%;
+            height: 100%;
+            display: block;
+        }}
+    </style>
+</head>
+<body>
+    <div id="cy"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            var elements = {elements_json};
+            
+            var cy = cytoscape({{
+                container: document.getElementById('cy'),
+                elements: elements,
+                style: [
+                    {{
+                        selector: 'node',
+                        style: {{
+                            'content': 'data(label)',
+                            'font-size': '12px',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'background-color': '#555',
+                            'text-outline-color': '#555',
+                            'text-outline-width': '2px',
+                            'color': '#fff',
+                            'overlay-padding': '6px',
+                            'z-index': '10',
+                            'width': 'label',
+                            'height': 'label',
+                            'padding': '12px',
+                            'shape': 'round-rectangle'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge',
+                        style: {{
+                            'curve-style': 'bezier',
+                            'opacity': 0.8,
+                            'line-color': '#bbb',
+                            'width': 2,
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-color': '#bbb',
+                            'label': 'data(label)',
+                            'color': '#fff',
+                            'font-size': '10px',
+                            'text-rotation': '0',
+                            'text-background-color': '#222222',
+                            'text-background-opacity': 1,
+                            'text-background-padding': '2px',
+                            'text-background-shape': 'round-rectangle'
+                        }}
+                    }},
+                    {{
+                        selector: ':selected',
+                        style: {{
+                            'border-width': '6px',
+                            'border-color': '#AAD8FF',
+                            'border-opacity': '0.5',
+                            'background-color': '#77828C',
+                            'text-outline-color': '#77828C',
+                            'line-color': '#AAD8FF',
+                            'target-arrow-color': '#AAD8FF',
+                            'source-arrow-color': '#AAD8FF'
+                        }}
+                    }}
+                ],
+                layout: {{
+                    name: 'fcose',
+                    quality: "default",
+                    randomize: true,
+                    animate: true,
+                    animationDuration: 1000,
+                    animationEasing: 'ease-in-out',
+                    fit: true,
+                    padding: 30,
+                    nodeDimensionsIncludeLabels: true,
+                    uniformNodeDimensions: false,
+                    packComponents: true,
+                    step: "all",
+                    initialEnergyOnIncremental: 0.3,
+                    samplingType: true,
+                    sampleSize: 25,
+                    nodeSeparation: 75,
+                    piTol: 0.0000001,
+                    nodeRepulsion: 4500,
+                    idealEdgeLength: 50,
+                    edgeElasticity: 0.45,
+                    nestingFactor: 0.1,
+                    gravity: 0.25,
+                    numIter: 2500,
+                    tile: true,
+                    tilingPaddingVertical: 10,
+                    tilingPaddingHorizontal: 10,
+                    gravityRangeCompound: 1.5,
+                    gravityCompound: 1.0,
+                    gravityRange: 3.8,
+                    initialEnergyOnIncremental: 0.3
+                }}
+            }});
+        }});
+    </script>
+</body>
+</html>
+    """
+    return html_content
+
+
 def visualize_graph(graph_documents):
     """
-    Visualizes a knowledge graph using PyVis based on the extracted graph documents.
+    Visualizes a knowledge graph using Cytoscape.js based on the extracted graph documents.
 
     Args:
         graph_documents (list): A list of GraphDocument objects with nodes and relationships.
 
     Returns:
-        pyvis.network.Network: The visualized network graph object.
+        object: A dummy object with a save_graph method to maintain compatibility, 
+                or we can just handle the saving here.
     """
-    # Create network
-    net = Network(height="1200px", width="100%", directed=True,
-                      notebook=False, bgcolor="#222222", font_color="white", filter_menu=False, cdn_resources='remote') 
-
-    nodes = graph_documents[0].nodes
-    relationships = graph_documents[0].relationships
-
-    # Build lookup for valid nodes
-    node_dict = {node.id: node for node in nodes}
+    # Generate Cytoscape elements
+    elements = generate_cytoscape_elements(graph_documents)
     
-    # Filter out invalid edges and collect valid node IDs
-    valid_edges = []
-    valid_node_ids = set()
-    for rel in relationships:
-        if rel.source.id in node_dict and rel.target.id in node_dict:
-            valid_edges.append(rel)
-            valid_node_ids.update([rel.source.id, rel.target.id])
-
-    # Track which nodes are part of any relationship
-    connected_node_ids = set()
-    for rel in relationships:
-        connected_node_ids.add(rel.source.id)
-        connected_node_ids.add(rel.target.id)
-
-    # Add valid nodes to the graph
-    for node_id in valid_node_ids:
-        node = node_dict[node_id]
-        try:
-            net.add_node(node.id, label=node.id, title=node.type, group=node.type)
-        except:
-            continue  # Skip node if error occurs
-
-    # Add valid edges to the graph
-    for rel in valid_edges:
-        try:
-            net.add_edge(rel.source.id, rel.target.id, label=rel.type.lower())
-        except:
-            continue  # Skip edge if error occurs
-
-    # Configure graph layout and physics
-    net.set_options("""
-        {
-            "physics": {
-                "forceAtlas2Based": {
-                    "gravitationalConstant": -100,
-                    "centralGravity": 0.01,
-                    "springLength": 200,
-                    "springConstant": 0.08
-                },
-                "minVelocity": 0.75,
-                "solver": "forceAtlas2Based"
-            }
-        }
-    """)
-
-    output_file = "knowledge_graph.html"
-    try:
-        net.save_graph(output_file)
-        print(f"Graph saved to {os.path.abspath(output_file)}")
-        return net
-    except Exception as e:
-        print(f"Error saving graph: {e}")
-        return None
+    # Generate HTML
+    html_content = generate_cytoscape_html(elements)
+    
+    # Define a helper class to mimic the PyVis Network object's save_graph method
+    class CytoscapeGraph:
+        def __init__(self, html_content):
+            self.html_content = html_content
+            
+        def save_graph(self, filename):
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(self.html_content)
+            print(f"Graph saved to {os.path.abspath(filename)}")
+            
+    return CytoscapeGraph(html_content)
 
 
 def export_graph_to_json(graph_documents):
@@ -246,7 +394,7 @@ def generate_knowledge_graph(text, api_key=None, prompt_template=None):
     Generates and visualizes a knowledge graph from input text.
 
     This function runs the graph extraction asynchronously and then visualizes
-    the resulting graph using PyVis.
+    the resulting graph using Cytoscape.js.
 
     Args:
         text (str): Input text to convert into a knowledge graph.
@@ -254,7 +402,7 @@ def generate_knowledge_graph(text, api_key=None, prompt_template=None):
         prompt_template (str, optional): Custom prompt template. If not provided, uses DEFAULT_PROMPT_TEMPLATE.
 
     Returns:
-        tuple: (pyvis.network.Network, list) - The visualized network graph object and graph_documents.
+        tuple: (CytoscapeGraph, list) - The graph object and graph_documents.
     """
     # APIキーの取得
     if api_key is None:
