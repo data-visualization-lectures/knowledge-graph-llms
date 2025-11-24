@@ -209,10 +209,11 @@ def generate_cytoscape_html(elements):
 <head>
     <meta charset="UTF-8">
     <title>Knowledge Graph</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
     <script src="https://unpkg.com/layout-base/layout-base.js"></script>
     <script src="https://unpkg.com/cose-base/cose-base.js"></script>
     <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+    <script src="https://unpkg.com/cytoscape-svg@0.4.0/cytoscape-svg.js"></script>
     <style>
         body {{
             font-family: sans-serif;
@@ -229,12 +230,51 @@ def generate_cytoscape_html(elements):
             height: 100%;
             display: block;
         }}
+        .export-buttons {{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }}
+        .export-btn {{
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }}
+        .export-btn:hover {{
+            background-color: #45a049;
+        }}
     </style>
 </head>
 <body>
+    <div class="export-buttons">
+        <button class="export-btn" onclick="exportPNG()">📷 PNG</button>
+        <button class="export-btn" onclick="exportSVG()">🖼️ SVG</button>
+    </div>
     <div id="cy"></div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
+            // Debug: Check if cytoscape-svg is loaded
+            console.log('cytoscapeSvg loaded:', typeof cytoscapeSvg !== 'undefined');
+            
+            // Register cytoscape-svg extension
+            if (typeof cytoscapeSvg !== 'undefined') {{
+                cytoscape.use(cytoscapeSvg);
+                console.log('cytoscape-svg extension registered');
+            }} else {{
+                console.error('cytoscape-svg extension not found!');
+            }}
+            
             var elements = {elements_json};
             
             var cy = cytoscape({{
@@ -249,46 +289,34 @@ def generate_cytoscape_html(elements):
                             'text-valign': 'center',
                             'text-halign': 'center',
                             'background-color': '#555',
-                            'text-outline-color': '#555',
-                            'text-outline-width': '2px',
                             'color': '#fff',
-                            'overlay-padding': '6px',
-                            'z-index': '10',
-                            'width': 'label',
-                            'height': 'label',
-                            'padding': '12px',
-                            'shape': 'round-rectangle'
+                            'text-outline-width': 2,
+                            'text-outline-color': '#555',
+                            'width': '40px',
+                            'height': '40px'
                         }}
                     }},
                     {{
                         selector: 'edge',
                         style: {{
-                            'curve-style': 'bezier',
-                            'opacity': 0.8,
-                            'line-color': 'data(edge_color)',
-                            'width': 'mapData(weight, 1, 10, 1, 8)',
+                            'width': function(ele) {{
+                                return Math.max(1, ele.data('weight') / 2);
+                            }},
+                            'line-color': function(ele) {{
+                                return ele.data('edge_color') || '#AAD8FF';
+                            }},
+                            'target-arrow-color': function(ele) {{
+                                return ele.data('edge_color') || '#AAD8FF';
+                            }},
                             'target-arrow-shape': 'triangle',
-                            'target-arrow-color': 'data(edge_color)',
+                            'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'color': '#fff',
                             'font-size': '10px',
-                            'text-rotation': '0',
-                            'text-background-color': '#222222',
-                            'text-background-opacity': 1,
-                            'text-background-padding': '2px',
-                            'text-background-shape': 'round-rectangle'
-                        }}
-                    }},
-                    {{
-                        selector: ':selected',
-                        style: {{
-                            'border-width': '6px',
-                            'border-color': '#AAD8FF',
-                            'border-opacity': '0.5',
-                            'background-color': '#77828C',
-                            'text-outline-color': '#77828C',
-                            'line-color': '#AAD8FF',
-                            'target-arrow-color': '#AAD8FF',
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': -10,
+                            'color': '#ffffff',
+                            'text-outline-width': 1.5,
+                            'text-outline-color': '#222222',
                             'source-arrow-color': '#AAD8FF'
                         }}
                     }}
@@ -326,7 +354,63 @@ def generate_cytoscape_html(elements):
                     initialEnergyOnIncremental: 0.3
                 }}
             }});
+        
+            // Store cy instance globally for export functions
+            window.cyInstance = cy;
         }});
+        
+        // PNG export function using Cytoscape.js built-in method
+        function exportPNG() {{
+            var cy = window.cyInstance;
+            if (!cy) {{
+                alert('Graph not ready. Please try again.');
+                return;
+            }}
+            
+            // Use cy.png() method with blob-promise output
+            var pngPromise = cy.png({{
+                output: 'blob-promise',
+                bg: '#222222',
+                full: true,
+                scale: 2
+            }});
+            
+            pngPromise.then(function(blob) {{
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'knowledge_graph.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }}).catch(function(error) {{
+                console.error('PNG export error:', error);
+                alert('Failed to export PNG. Error: ' + error.message);
+            }});
+        }}
+        
+        // SVG export function using cytoscape-svg extension
+        function exportSVG() {{
+            var cy = window.cyInstance;
+            if (!cy) return;
+            
+            try {{
+                var svgContent = cy.svg({{ scale: 1, full: true }});
+                var blob = new Blob([svgContent], {{ type: 'image/svg+xml;charset=utf-8' }});
+                
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'knowledge_graph.svg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }} catch(e) {{
+                console.error('SVG export error:', e);
+                alert('SVG export failed. The cytoscape-svg extension may not be loaded correctly.');
+            }}
+        }}
     </script>
 </body>
 </html>

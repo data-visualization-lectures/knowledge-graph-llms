@@ -12,7 +12,33 @@ st.set_page_config(
 )
 
 # Set the title of the app
-st.title("テキストから知識グラフを生成")
+col_title, col_download = st.columns([3, 2])
+
+with col_title:
+    st.header("知識グラフ")
+
+with col_download:
+    if "graph_documents" in st.session_state and st.session_state.graph_documents is not None:
+        st.markdown('<div style="text-align: right; margin-bottom: 5px;">📥 グラフデータをダウンロード</div>', unsafe_allow_html=True)
+        d_c1, d_c2 = st.columns(2)
+        with d_c1:
+            json_data = export_graph_to_json(st.session_state.graph_documents)
+            st.download_button(
+                label="📄 JSON",
+                data=json_data,
+                file_name="knowledge_graph.json",
+                mime="application/json",
+                use_container_width=True
+            )
+        with d_c2:
+            csv_data = export_graph_to_csv(st.session_state.graph_documents)
+            st.download_button(
+                label="📊 CSV",
+                data=csv_data,
+                file_name="knowledge_graph.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
 
 # Initialize session state for graph data
 if "graph_documents" not in st.session_state:
@@ -185,30 +211,7 @@ if input_method == "ファイルをアップロード":
         if st.session_state.graph_html is not None:
             components.html(st.session_state.graph_html, height=1000)
 
-        # Display download buttons if graph data exists
-        if st.session_state.graph_documents is not None:
-            st.sidebar.markdown("---")
-            st.sidebar.subheader("📥 グラフデータをダウンロード")
 
-            col1, col2 = st.sidebar.columns(2)
-
-            with col1:
-                json_data = export_graph_to_json(st.session_state.graph_documents)
-                st.download_button(
-                    label="📄 JSON",
-                    data=json_data,
-                    file_name="knowledge_graph.json",
-                    mime="application/json"
-                )
-
-            with col2:
-                csv_data = export_graph_to_csv(st.session_state.graph_documents)
-                st.download_button(
-                    label="📊 CSV",
-                    data=csv_data,
-                    file_name="knowledge_graph.csv",
-                    mime="text/csv"
-                )
 
 # Case 2: User chooses to directly input text
 else:

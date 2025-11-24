@@ -4,10 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Knowledge Graph</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
     <script src="https://unpkg.com/layout-base/layout-base.js"></script>
     <script src="https://unpkg.com/cose-base/cose-base.js"></script>
     <script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
+    <script src="https://unpkg.com/cytoscape-svg@0.4.0/cytoscape-svg.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -24,13 +25,52 @@
             height: 100%;
             display: block;
         }
+        .export-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        .export-btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .export-btn:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
+    <div class="export-buttons">
+        <button class="export-btn" onclick="exportPNG()">📷 PNG</button>
+        <button class="export-btn" onclick="exportSVG()">🖼️ SVG</button>
+    </div>
     <div id="cy"></div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var elements = [{"data": {"id": "先生", "label": "先生", "type": "Person"}, "position": {"x": 703.2359428951446, "y": 348.38917220569454}}, {"data": {"id": "カムパネルラ", "label": "カムパネルラ", "type": "Person"}, "position": {"x": 491.1766947058312, "y": 495.45177901721047}}, {"data": {"id": "ジョバンニ", "label": "ジョバンニ", "type": "Person"}, "position": {"x": 738.3055291324217, "y": 235.6444133036268}}, {"data": {"id": "ザネリ", "label": "ザネリ", "type": "Person"}, "position": {"x": 483.8981777932046, "y": 301.72910115410684}}, {"data": {"id": "カムパネルラのお父さん", "label": "カムパネルラのお父さん", "type": "Person"}, "position": {"x": 297.03031188803334, "y": 127.42817796520053}}, {"data": {"id": "博士", "label": "博士", "type": "Person"}, "position": {"x": 688.9505329486265, "y": 208.73778659407768}}, {"data": {"id": "教室", "label": "教室", "type": "Place"}, "position": {"x": 312.099634792745, "y": 389.2049801856839}}, {"data": {"id": "雑誌", "label": "雑誌", "type": "Object"}, "position": {"x": 636.1121286810293, "y": 160.64212696520505}}, {"data": {"id": "書斎", "label": "書斎", "type": "Place"}, "position": {"x": 684.9962523144324, "y": 199.62308482453284}}, {"data": {"id": "本", "label": "本", "type": "Object"}, "position": {"x": 358.96144350832253, "y": 582.7840907278792}}, {"data": {"id": "天の川", "label": "天の川", "type": "Object"}, "position": {"x": 381.46259472708573, "y": 489.16734137858236}}, {"data": {"id": "星", "label": "星", "type": "Object"}, "position": {"x": 158.37741177523617, "y": 540.147261923634}}, {"data": {"id": "太陽", "label": "太陽", "type": "Object"}, "position": {"x": 385.51617830486816, "y": 508.514362287104}}, {"data": {"id": "地球", "label": "地球", "type": "Object"}, "position": {"x": 533.0207968144391, "y": 304.1108312384802}}, {"data": {"id": "銀河", "label": "銀河", "type": "Object"}, "position": {"x": 732.5882856310429, "y": 167.79862384230802}}, {"data": {"source": "先生", "target": "教室", "label": "教えている_", "weight": 10, "edge_color": "#FF6B6B"}}, {"data": {"source": "カムパネルラ", "target": "ジョバンニ", "label": "友人である_", "weight": 7, "edge_color": "#4ECDC4"}}, {"data": {"source": "ジョバンニ", "target": "カムパネルラ", "label": "友人である_", "weight": 7, "edge_color": "#4ECDC4"}}, {"data": {"source": "カムパネルラ", "target": "カムパネルラのお父さん", "label": "親子である_", "weight": 10, "edge_color": "#45B7D1"}}, {"data": {"source": "カムパネルラのお父さん", "target": "博士", "label": "同一人物である_", "weight": 10, "edge_color": "#FFA07A"}}, {"data": {"source": "カムパネルラ", "target": "書斎", "label": "訪れた_", "weight": 5, "edge_color": "#98D8C8"}}, {"data": {"source": "カムパネルラ", "target": "本", "label": "読んだ_", "weight": 6, "edge_color": "#F7DC6F"}}, {"data": {"source": "ジョバンニ", "target": "雑誌", "label": "読んだ_", "weight": 6, "edge_color": "#F7DC6F"}}, {"data": {"source": "カムパネルラ", "target": "雑誌", "label": "読んだ_", "weight": 6, "edge_color": "#F7DC6F"}}, {"data": {"source": "天の川", "target": "星", "label": "含んでいる_", "weight": 8, "edge_color": "#BB8FCE"}}, {"data": {"source": "銀河", "target": "星", "label": "含んでいる_", "weight": 8, "edge_color": "#BB8FCE"}}, {"data": {"source": "太陽", "target": "地球", "label": "近くにある_", "weight": 7, "edge_color": "#F1948A"}}];
+            // Debug: Check if cytoscape-svg is loaded
+            console.log('cytoscapeSvg loaded:', typeof cytoscapeSvg !== 'undefined');
+            
+            // Register cytoscape-svg extension
+            if (typeof cytoscapeSvg !== 'undefined') {
+                cytoscape.use(cytoscapeSvg);
+                console.log('cytoscape-svg extension registered');
+            } else {
+                console.error('cytoscape-svg extension not found!');
+            }
+            
+            var elements = [{"data": {"id": "先生", "label": "先生", "type": "Person"}, "position": {"x": 531.6383734618448, "y": 317.3399734071211}}, {"data": {"id": "カムパネルラ", "label": "カムパネルラ", "type": "Person"}, "position": {"x": 434.6515745250115, "y": 124.37167961736286}}, {"data": {"id": "ジョバンニ", "label": "ジョバンニ", "type": "Person"}, "position": {"x": 132.3251322088255, "y": 557.5610386793988}}, {"data": {"id": "ザネリ", "label": "ザネリ", "type": "Person"}, "position": {"x": 764.3119689530465, "y": 447.7839626011284}}, {"data": {"id": "カムパネルラのお父さん", "label": "カムパネルラのお父さん", "type": "Person"}, "position": {"x": 647.9963381084867, "y": 408.61646649048606}}, {"data": {"id": "博士", "label": "博士", "type": "Person"}, "position": {"x": 254.2378835775603, "y": 207.9200153750065}}, {"data": {"id": "教室", "label": "教室", "type": "Place"}, "position": {"x": 355.12686037787654, "y": 151.5008879211164}}, {"data": {"id": "雑誌", "label": "雑誌", "type": "Object"}, "position": {"x": 453.7091768509872, "y": 188.1017819265819}}, {"data": {"id": "書斎", "label": "書斎", "type": "Place"}, "position": {"x": 183.3051209165226, "y": 491.398141139381}}, {"data": {"id": "本", "label": "本", "type": "Object"}, "position": {"x": 357.5985263533795, "y": 391.8895383633904}}, {"data": {"id": "天の川", "label": "天の川", "type": "Object"}, "position": {"x": 362.6650461227813, "y": 127.32032026614002}}, {"data": {"id": "星", "label": "星", "type": "Object"}, "position": {"x": 409.9644242677306, "y": 151.59991553200743}}, {"data": {"id": "太陽", "label": "太陽", "type": "Object"}, "position": {"x": 236.01619101025898, "y": 151.5304729458031}}, {"data": {"id": "地球", "label": "地球", "type": "Object"}, "position": {"x": 463.45284903782493, "y": 305.6601773006969}}, {"data": {"id": "銀河", "label": "銀河", "type": "Object"}, "position": {"x": 148.81663669875417, "y": 155.24301023550655}}, {"data": {"source": "先生", "target": "教室", "label": "位置している_", "weight": 5, "edge_color": "#FF6B6B"}}, {"data": {"source": "先生", "target": "カムパネルラ", "label": "質問する_", "weight": 3, "edge_color": "#4ECDC4"}}, {"data": {"source": "先生", "target": "ジョバンニ", "label": "質問する_", "weight": 3, "edge_color": "#4ECDC4"}}, {"data": {"source": "ジョバンニ", "target": "カムパネルラ", "label": "友人である_", "weight": 7, "edge_color": "#45B7D1"}}, {"data": {"source": "カムパネルラ", "target": "カムパネルラのお父さん", "label": "子供である_", "weight": 10, "edge_color": "#FFA07A"}}, {"data": {"source": "カムパネルラのお父さん", "target": "博士", "label": "同一人物である_", "weight": 10, "edge_color": "#98D8C8"}}, {"data": {"source": "カムパネルラ", "target": "書斎", "label": "訪れる_", "weight": 4, "edge_color": "#F7DC6F"}}, {"data": {"source": "カムパネルラ", "target": "本", "label": "読む_", "weight": 6, "edge_color": "#BB8FCE"}}, {"data": {"source": "ジョバンニ", "target": "雑誌", "label": "読む_", "weight": 6, "edge_color": "#BB8FCE"}}, {"data": {"source": "カムパネルラ", "target": "雑誌", "label": "読む_", "weight": 6, "edge_color": "#BB8FCE"}}, {"data": {"source": "天の川", "target": "星", "label": "含む_", "weight": 8, "edge_color": "#F1948A"}}, {"data": {"source": "銀河", "target": "星", "label": "含む_", "weight": 8, "edge_color": "#F1948A"}}, {"data": {"source": "太陽", "target": "地球", "label": "近くにある_", "weight": 7, "edge_color": "#82E0AA"}}];
             
             var cy = cytoscape({
                 container: document.getElementById('cy'),
@@ -44,46 +84,34 @@
                             'text-valign': 'center',
                             'text-halign': 'center',
                             'background-color': '#555',
-                            'text-outline-color': '#555',
-                            'text-outline-width': '2px',
                             'color': '#fff',
-                            'overlay-padding': '6px',
-                            'z-index': '10',
-                            'width': 'label',
-                            'height': 'label',
-                            'padding': '12px',
-                            'shape': 'round-rectangle'
+                            'text-outline-width': 2,
+                            'text-outline-color': '#555',
+                            'width': '40px',
+                            'height': '40px'
                         }
                     },
                     {
                         selector: 'edge',
                         style: {
-                            'curve-style': 'bezier',
-                            'opacity': 0.8,
-                            'line-color': 'data(edge_color)',
-                            'width': 'mapData(weight, 1, 10, 1, 8)',
+                            'width': function(ele) {
+                                return Math.max(1, ele.data('weight') / 2);
+                            },
+                            'line-color': function(ele) {
+                                return ele.data('edge_color') || '#AAD8FF';
+                            },
+                            'target-arrow-color': function(ele) {
+                                return ele.data('edge_color') || '#AAD8FF';
+                            },
                             'target-arrow-shape': 'triangle',
-                            'target-arrow-color': 'data(edge_color)',
+                            'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'color': '#fff',
                             'font-size': '10px',
-                            'text-rotation': '0',
-                            'text-background-color': '#222222',
-                            'text-background-opacity': 1,
-                            'text-background-padding': '2px',
-                            'text-background-shape': 'round-rectangle'
-                        }
-                    },
-                    {
-                        selector: ':selected',
-                        style: {
-                            'border-width': '6px',
-                            'border-color': '#AAD8FF',
-                            'border-opacity': '0.5',
-                            'background-color': '#77828C',
-                            'text-outline-color': '#77828C',
-                            'line-color': '#AAD8FF',
-                            'target-arrow-color': '#AAD8FF',
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': -10,
+                            'color': '#ffffff',
+                            'text-outline-width': 1.5,
+                            'text-outline-color': '#222222',
                             'source-arrow-color': '#AAD8FF'
                         }
                     }
@@ -121,7 +149,63 @@
                     initialEnergyOnIncremental: 0.3
                 }
             });
+        
+            // Store cy instance globally for export functions
+            window.cyInstance = cy;
         });
+        
+        // PNG export function using Cytoscape.js built-in method
+        function exportPNG() {
+            var cy = window.cyInstance;
+            if (!cy) {
+                alert('Graph not ready. Please try again.');
+                return;
+            }
+            
+            // Use cy.png() method with blob-promise output
+            var pngPromise = cy.png({
+                output: 'blob-promise',
+                bg: '#222222',
+                full: true,
+                scale: 2
+            });
+            
+            pngPromise.then(function(blob) {
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'knowledge_graph.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }).catch(function(error) {
+                console.error('PNG export error:', error);
+                alert('Failed to export PNG. Error: ' + error.message);
+            });
+        }
+        
+        // SVG export function using cytoscape-svg extension
+        function exportSVG() {
+            var cy = window.cyInstance;
+            if (!cy) return;
+            
+            try {
+                var svgContent = cy.svg({ scale: 1, full: true });
+                var blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+                
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'knowledge_graph.svg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch(e) {
+                console.error('SVG export error:', e);
+                alert('SVG export failed. The cytoscape-svg extension may not be loaded correctly.');
+            }
+        }
     </script>
 </body>
 </html>
