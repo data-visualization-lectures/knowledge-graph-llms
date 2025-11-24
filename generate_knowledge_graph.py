@@ -75,7 +75,7 @@ def visualize_graph(graph_documents):
     """
     # Create network
     net = Network(height="1200px", width="100%", directed=True,
-                      notebook=False, bgcolor="#222222", font_color="white", filter_menu=True, cdn_resources='remote') 
+                      notebook=False, bgcolor="#222222", font_color="white", filter_menu=False, cdn_resources='remote') 
 
     nodes = graph_documents[0].nodes
     relationships = graph_documents[0].relationships
