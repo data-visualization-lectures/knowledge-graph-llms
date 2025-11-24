@@ -1,8 +1,13 @@
+
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 from langchain_core.callbacks import BaseCallbackHandler
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
 from dotenv import load_dotenv
 import os
@@ -57,6 +62,20 @@ class DebugCallbackHandler(BaseCallbackHandler):
                 print(f"\n【応答 {i}-{j}】")
                 print(gen.text)
         print("="*80 + "\n")
+
+
+class Node(BaseModel):
+    id: str = Field(description="Unique identifier for the node (entity name)")
+    type: str = Field(description="Type of the node (e.g., Person, Organization, Location)")
+
+class Relationship(BaseModel):
+    source: Node = Field(description="Source node of the relationship")
+    target: Node = Field(description="Target node of the relationship")
+    type: str = Field(description="Type of the relationship (e.g., works_at, located_in)")
+
+class KnowledgeGraph(BaseModel):
+    nodes: List[Node] = Field(description="List of nodes in the graph")
+    relationships: List[Relationship] = Field(description="List of relationships in the graph")
 
 
 # Extract graph data from input text
@@ -420,7 +439,7 @@ def export_graph_to_csv(graph_documents):
     return output.getvalue()
 
 
-def generate_knowledge_graph(text, api_key=None, prompt_template=None):
+def generate_knowledge_graph(text, api_key=None, prompt_template=None, llm_provider="OpenAI"):
     """
     Generates and visualizes a knowledge graph from input text.
 
@@ -429,8 +448,9 @@ def generate_knowledge_graph(text, api_key=None, prompt_template=None):
 
     Args:
         text (str): Input text to convert into a knowledge graph.
-        api_key (str, optional): OpenAI API key. If not provided, reads from environment.
+        api_key (str, optional): API key for the selected provider. If not provided, reads from environment.
         prompt_template (str, optional): Custom prompt template. If not provided, uses DEFAULT_PROMPT_TEMPLATE.
+        llm_provider (str, optional): The LLM provider to use ("OpenAI" or "Google Gemini"). Defaults to "OpenAI".
 
     Returns:
         tuple: (CytoscapeGraph, list) - The graph object and graph_documents.
@@ -438,21 +458,32 @@ def generate_knowledge_graph(text, api_key=None, prompt_template=None):
     # APIキーの取得
     if api_key is None:
         load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        if llm_provider == "Google Gemini":
+            api_key = os.getenv("GOOGLE_API_KEY")
+        else:
+            api_key = os.getenv("OPENAI_API_KEY")
     
     if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY が設定されていません。"
-        )
+        key_name = "GOOGLE_API_KEY" if llm_provider == "Google Gemini" else "OPENAI_API_KEY"
+        raise ValueError(f"{key_name} が設定されていません。")
     
     # LLMとtransformerの初期化（デバッグコールバック付き）
     debug_callback = DebugCallbackHandler()
-    llm = ChatOpenAI(
-        temperature=0, 
-        model_name="gpt-4o", 
-        api_key=api_key,
-        callbacks=[debug_callback]
-    )
+    
+    if llm_provider == "Google Gemini":
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.5-pro", 
+            temperature=0, 
+            google_api_key=api_key,
+            callbacks=[debug_callback]
+        )
+    else:
+        llm = ChatOpenAI(
+            temperature=0, 
+            model_name="gpt-4o", 
+            api_key=api_key,
+            callbacks=[debug_callback]
+        )
     
     # Use custom prompt template or default
     if prompt_template is None:
@@ -465,7 +496,7 @@ def generate_knowledge_graph(text, api_key=None, prompt_template=None):
     
     # グラフデータの抽出と可視化
     print("\n" + "="*80)
-    print("🚀 グラフデータ抽出を開始")
+    print(f"🚀 グラフデータ抽出を開始 ({llm_provider})")
     print("="*80)
     graph_documents = asyncio.run(extract_graph_data(text, graph_transformer))
     

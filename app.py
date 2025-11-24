@@ -57,6 +57,16 @@ env_api_key = os.getenv("OPENAI_API_KEY")
 # Sidebar section for API key input
 st.sidebar.title("🔑 API設定")
 
+# LLM Provider Selection
+llm_provider = st.sidebar.radio(
+    "LLMプロバイダーを選択:",
+    ["OpenAI", "Google Gemini"],
+    index=0
+)
+
+key_env_var = "OPENAI_API_KEY" if llm_provider == "OpenAI" else "GOOGLE_API_KEY"
+env_api_key = os.getenv(key_env_var)
+
 if env_api_key:
     # If API key exists in environment, use it and skip user input
     st.sidebar.success("✅ 環境変数からAPIキーを読み込みました")
@@ -65,9 +75,9 @@ if env_api_key:
 else:
     # If no API key in environment, show input form
     api_key = st.sidebar.text_input(
-        "OpenAI APIキーを入力",
+        f"{llm_provider} APIキーを入力",
         type="password",
-        help="あなたのOpenAI APIキーを入力してください。キーは保存されません。"
+        help=f"あなたの{llm_provider} APIキーを入力してください。キーは保存されません。"
     )
     
     # Reset validation if API key changed
@@ -78,8 +88,8 @@ else:
     if not api_key:
         st.sidebar.warning("⚠️ APIキーを入力してください")
         st.info(
-            "このツールを使用するには、OpenAI APIキーが必要です。\n\n"
-            "APIキーは [OpenAI Platform](https://platform.openai.com/api-keys) で取得できます。\n\n"
+            f"このツールを使用するには、{llm_provider} APIキーが必要です。\n\n"
+            "APIキーは各プロバイダーの公式サイトで取得できます。\n\n"
             "**注意**: 入力されたAPIキーはセッション中のみ使用され、保存されません。"
         )
         st.stop()
@@ -90,8 +100,14 @@ else:
                 with st.spinner("APIキーを検証中..."):
                     try:
                         # Test API key with a simple call
-                        from langchain_openai import ChatOpenAI
-                        test_llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=api_key)
+                        if llm_provider == "Google Gemini":
+                            from langchain_google_genai import ChatGoogleGenerativeAI
+                            test_llm = ChatGoogleGenerativeAI(model="gemini-2.5-pro", temperature=0, google_api_key=api_key)
+                        else:
+                            from langchain_openai import ChatOpenAI
+                            test_llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=api_key)
+                        
+                        # Make a minimal API call to verify the key
                         # Make a minimal API call to verify the key
                         test_llm.invoke("test")
                         st.session_state.api_key_validated = True
@@ -147,7 +163,7 @@ if input_method == "ファイルをアップロード":
             with st.spinner("知識グラフを生成中..."):
                 try:
                     # Call the function to generate the graph from the text
-                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt)
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt, llm_provider=llm_provider)
                     st.session_state.graph_documents = graph_documents
                 except Exception as e:
                     st.error(f"エラーが発生しました: {str(e)}")
@@ -204,7 +220,7 @@ else:
             with st.spinner("知識グラフを生成中..."):
                 try:
                     # Call the function to generate the graph from the input text
-                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt)
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key, prompt_template=custom_prompt, llm_provider=llm_provider)
                     st.session_state.graph_documents = graph_documents
                 except Exception as e:
                     st.error(f"エラーが発生しました: {str(e)}")
