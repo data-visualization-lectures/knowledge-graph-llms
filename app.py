@@ -81,7 +81,7 @@ load_dotenv()
 env_api_key = os.getenv("OPENAI_API_KEY")
 
 # Sidebar section for API key input
-st.sidebar.title("🔑 API設定")
+st.sidebar.header("🔑 API設定")
 
 # LLM Provider Selection
 llm_provider = st.sidebar.radio(
@@ -151,7 +151,7 @@ else:
 st.sidebar.markdown("---")
 
 # Sidebar section for prompt customization
-st.sidebar.title("⚙️ プロンプト設定")
+st.sidebar.header("⚙️ プロンプト設定")
 from generate_knowledge_graph import DEFAULT_PROMPT_TEMPLATE
 
 with st.sidebar.expander("プロンプトをカスタマイズ", expanded=False):
@@ -169,7 +169,7 @@ with st.sidebar.expander("プロンプトをカスタマイズ", expanded=False)
 st.sidebar.markdown("---")
 
 # Sidebar section for user input method
-st.sidebar.title("ドキュメント入力")
+st.sidebar.header("ドキュメント入力")
 input_method = st.sidebar.radio(
     "入力方法を選択:",
     ["ファイルをアップロード", "テキストを直接入力"],  # Options for uploading a file or manually inputting text
