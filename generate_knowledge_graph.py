@@ -16,13 +16,16 @@ from io import StringIO
 DEFAULT_PROMPT_TEMPLATE = """以下のテキストから知識グラフの情報を抽出してください。
 エンティティ（人物、組織、場所など）と、それらの間の関係性を日本語で抽出します。
 
-関係性は以下の例のように、わかりやすい日本語で出力してください：
-- 所属している
-- 友人である
-- 位置している
-- 質問する
-- 説明する
-- 関連している
+関係性は「関係性 [強度]」の形式で出力してください。
+強度は1から10の整数で、関係の強さや重要度を表します（10が最も強い）。
+
+例：
+- 所属している [10]
+- 友人である [7]
+- 位置している [5]
+- 質問する [3]
+- 説明する [4]
+- 関連している [2]
 
 テキスト：
 {input}
@@ -110,6 +113,15 @@ def generate_cytoscape_elements(graph_documents):
     node_ids = set()
 
     import random
+    import re
+
+    # Color palette for relationships (qualitative)
+    REL_COLORS = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
+        '#F7DC6F', '#BB8FCE', '#F1948A', '#82E0AA', '#85C1E9'
+    ]
+    type_color_map = {}
+    color_idx = 0
 
     # Add nodes
     for node in nodes:
@@ -130,11 +142,30 @@ def generate_cytoscape_elements(graph_documents):
     for rel in relationships:
         # Ensure both source and target nodes exist to avoid errors
         if rel.source.id in node_ids and rel.target.id in node_ids:
+            # Parse label and weight from relationship type "Label [Weight]"
+            label = rel.type
+            weight = 1
+            match = re.match(r"(.*)\s*\[(\d+)\]", rel.type)
+            if match:
+                label = match.group(1).strip()
+                try:
+                    weight = int(match.group(2))
+                except ValueError:
+                    weight = 1
+            
+            # Assign color based on label
+            if label not in type_color_map:
+                type_color_map[label] = REL_COLORS[color_idx % len(REL_COLORS)]
+                color_idx += 1
+            edge_color = type_color_map[label]
+
             elements.append({
                 "data": {
                     "source": rel.source.id,
                     "target": rel.target.id,
-                    "label": rel.type
+                    "label": label,
+                    "weight": weight,
+                    "edge_color": edge_color
                 }
             })
             
@@ -215,10 +246,10 @@ def generate_cytoscape_html(elements):
                         style: {{
                             'curve-style': 'bezier',
                             'opacity': 0.8,
-                            'line-color': '#bbb',
-                            'width': 2,
+                            'line-color': 'data(edge_color)',
+                            'width': 'mapData(weight, 1, 10, 1, 8)',
                             'target-arrow-shape': 'triangle',
-                            'target-arrow-color': '#bbb',
+                            'target-arrow-color': 'data(edge_color)',
                             'label': 'data(label)',
                             'color': '#fff',
                             'font-size': '10px',
