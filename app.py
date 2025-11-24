@@ -20,6 +20,73 @@ if "graph_documents" not in st.session_state:
 if "graph_html" not in st.session_state:
     st.session_state.graph_html = None
 
+# Initialize session state for API key validation
+if "api_key_validated" not in st.session_state:
+    st.session_state.api_key_validated = False
+if "last_validated_key" not in st.session_state:
+    st.session_state.last_validated_key = None
+
+# Check if API key is available in environment variables
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+env_api_key = os.getenv("OPENAI_API_KEY")
+
+# Sidebar section for API key input
+st.sidebar.title("🔑 API設定")
+
+if env_api_key:
+    # If API key exists in environment, use it and skip user input
+    st.sidebar.success("✅ 環境変数からAPIキーを読み込みました")
+    api_key = env_api_key
+    st.session_state.api_key_validated = True
+else:
+    # If no API key in environment, show input form
+    api_key = st.sidebar.text_input(
+        "OpenAI APIキーを入力",
+        type="password",
+        help="あなたのOpenAI APIキーを入力してください。キーは保存されません。"
+    )
+    
+    # Reset validation if API key changed
+    if api_key != st.session_state.last_validated_key:
+        st.session_state.api_key_validated = False
+        st.session_state.last_validated_key = None
+    
+    if not api_key:
+        st.sidebar.warning("⚠️ APIキーを入力してください")
+        st.info(
+            "このツールを使用するには、OpenAI APIキーが必要です。\n\n"
+            "APIキーは [OpenAI Platform](https://platform.openai.com/api-keys) で取得できます。\n\n"
+            "**注意**: 入力されたAPIキーはセッション中のみ使用され、保存されません。"
+        )
+        st.stop()
+    else:
+        # Validate API key button
+        if not st.session_state.api_key_validated:
+            if st.sidebar.button("🔍 APIキーを検証", type="primary"):
+                with st.spinner("APIキーを検証中..."):
+                    try:
+                        # Test API key with a simple call
+                        from langchain_openai import ChatOpenAI
+                        test_llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=api_key)
+                        # Make a minimal API call to verify the key
+                        test_llm.invoke("test")
+                        st.session_state.api_key_validated = True
+                        st.session_state.last_validated_key = api_key
+                        st.sidebar.success("✅ APIキーが検証されました")
+                    except Exception as e:
+                        st.sidebar.error(f"❌ APIキーが無効です: {str(e)}")
+                        st.stop()
+            else:
+                st.sidebar.info("👆 APIキーを検証してください")
+                st.stop()
+        else:
+            st.sidebar.success("✅ APIキーが検証されました")
+
+st.sidebar.markdown("---")
+
 # Sidebar section for user input method
 st.sidebar.title("ドキュメント入力")
 input_method = st.sidebar.radio(
@@ -39,9 +106,13 @@ if input_method == "ファイルをアップロード":
         # Button to generate the knowledge graph
         if st.sidebar.button("知識グラフを生成"):
             with st.spinner("知識グラフを生成中..."):
-                # Call the function to generate the graph from the text
-                net, graph_documents = generate_knowledge_graph(text)
-                st.session_state.graph_documents = graph_documents
+                try:
+                    # Call the function to generate the graph from the text
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key)
+                    st.session_state.graph_documents = graph_documents
+                except Exception as e:
+                    st.error(f"エラーが発生しました: {str(e)}")
+                    st.stop()
                 st.success("知識グラフを生成しました！")
 
                 # Save the graph to an HTML file
@@ -89,9 +160,13 @@ else:
     if text:  # Check if the text area is not empty
         if st.sidebar.button("知識グラフを生成"):
             with st.spinner("知識グラフを生成中..."):
-                # Call the function to generate the graph from the input text
-                net, graph_documents = generate_knowledge_graph(text)
-                st.session_state.graph_documents = graph_documents
+                try:
+                    # Call the function to generate the graph from the input text
+                    net, graph_documents = generate_knowledge_graph(text, api_key=api_key)
+                    st.session_state.graph_documents = graph_documents
+                except Exception as e:
+                    st.error(f"エラーが発生しました: {str(e)}")
+                    st.stop()
                 st.success("知識グラフを生成しました！")
 
                 # Save the graph to an HTML file

@@ -12,48 +12,14 @@ import csv
 from io import StringIO
 
 
-# Load the .env file
-load_dotenv()
-# Get API key from environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError(
-        "OPENAI_API_KEY が設定されていません。 "
-        "Streamlit Cloud の Secrets またはローカルの .env ファイルで設定してください。"
-    )
-
-llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
-
-# Create a custom prompt for Japanese relationship extraction
-japanese_prompt = PromptTemplate.from_template(
-    """以下のテキストから知識グラフの情報を抽出してください。
-エンティティ（人物、組織、場所など）と、それらの間の関係性を日本語で抽出します。
-
-関係性は以下の例のように、わかりやすい日本語で出力してください：
-- 所属している
-- 友人である
-- 位置している
-- 質問する
-- 説明する
-- 関連している
-
-テキスト：
-{input}
-
-エンティティと関係性を抽出してください。"""
-)
-
-graph_transformer = LLMGraphTransformer(llm=llm, prompt=japanese_prompt)
-
-
 # Extract graph data from input text
-async def extract_graph_data(text):
+async def extract_graph_data(text, graph_transformer):
     """
     Asynchronously extracts graph data from input text using a graph transformer.
 
     Args:
         text (str): Input text to be processed into graph format.
+        graph_transformer: LLMGraphTransformer instance to use for extraction.
 
     Returns:
         list: A list of GraphDocument objects containing nodes and relationships.
@@ -213,7 +179,7 @@ def export_graph_to_csv(graph_documents):
     return output.getvalue()
 
 
-def generate_knowledge_graph(text):
+def generate_knowledge_graph(text, api_key=None):
     """
     Generates and visualizes a knowledge graph from input text.
 
@@ -222,10 +188,46 @@ def generate_knowledge_graph(text):
 
     Args:
         text (str): Input text to convert into a knowledge graph.
+        api_key (str, optional): OpenAI API key. If not provided, reads from environment.
 
     Returns:
         tuple: (pyvis.network.Network, list) - The visualized network graph object and graph_documents.
     """
-    graph_documents = asyncio.run(extract_graph_data(text))
+    # APIキーの取得
+    if api_key is None:
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY が設定されていません。"
+        )
+    
+    # LLMとtransformerの初期化
+    llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=api_key)
+    
+    # Create a custom prompt for Japanese relationship extraction
+    japanese_prompt = PromptTemplate.from_template(
+        """以下のテキストから知識グラフの情報を抽出してください。
+エンティティ（人物、組織、場所など）と、それらの間の関係性を日本語で抽出します。
+
+関係性は以下の例のように、わかりやすい日本語で出力してください：
+- 所属している
+- 友人である
+- 位置している
+- 質問する
+- 説明する
+- 関連している
+
+テキスト：
+{input}
+
+エンティティと関係性を抽出してください。"""
+    )
+    
+    graph_transformer = LLMGraphTransformer(llm=llm, prompt=japanese_prompt)
+    
+    # グラフデータの抽出と可視化
+    graph_documents = asyncio.run(extract_graph_data(text, graph_transformer))
     net = visualize_graph(graph_documents)
     return net, graph_documents
