@@ -18,6 +18,44 @@
   - モデル変更後は短いサンプルテキストでグラフ生成が問題なく動くかを試すのがおすすめです。
 
 
+## ユーザー入力テキストがグラフデータになるまでの流れ
+
+生成AIが直接グラフデータを返すわけではありません。LangChainの`LLMGraphTransformer`が間に入って、LLMの応答をグラフ構造に変換しています。
+
+### 処理の流れ
+
+1. **ユーザー入力テキスト**
+   ```
+   例: "太郎は東京大学に所属している。花子は太郎の友人である。"
+   ```
+
+2. **LLMへのプロンプト送信**
+   - `LLMGraphTransformer`が内部でプロンプトを構築
+   - ユーザーがカスタマイズした`japanese_prompt`（または`custom_prompt`）を使用
+   - LLM（GPT-4o）にテキストを送信
+
+3. **LLMの応答**
+   - LLMは構造化された形式でエンティティと関係性を返します
+   - LangChainの`LLMGraphTransformer`は、LLMに特定のフォーマットで返すよう内部的に指示しています
+   - 応答にはノード（エンティティ）とエッジ（関係性）の情報が含まれます
+
+4. **LangChainによる変換**
+   - `graph_transformer.aconvert_to_graph_documents()`が実行される（`generate_knowledge_graph.py`の45行目付近）
+   - LLMの応答を`GraphDocument`オブジェクトに変換
+   - `GraphDocument`には以下が含まれます：
+     - `nodes`: ノードのリスト（例: 太郎、花子、東京大学）
+     - `relationships`: 関係性のリスト（例: 太郎 → 所属している → 東京大学）
+
+5. **可視化**
+   - `visualize_graph()`関数がこの`GraphDocument`を受け取る
+   - PyVisを使ってインタラクティブなHTMLグラフとして可視化
+   - `knowledge_graph.html`として保存
+
+**まとめ**: LLMは構造化されたテキストを返し、LangChainがそれをグラフオブジェクトに変換し、PyVisが可視化するという3段階の処理になっています。
+
+
+
+
   ## Streamlit
 
 - Streamlit 上で Python を書き、pyvis で生成した HTML を streamlit.components.v1.components.html でそのまま埋め込んでいるだけです。
@@ -46,3 +84,5 @@
       1. vis-network を CDN で読み込み、components.html に直接 JSON を渡して描画する最小実装を作る。
       2. cytoscape.js でスタイル・レイアウトを細かく制御する。
       3. React ベースのカスタムコンポーネント化で将来拡張に備える。
+
+
